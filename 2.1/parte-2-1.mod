@@ -24,5 +24,12 @@ minimize Cost: sum {i in BUSES} (
 s.t. Slot_per_bus {j in SLOTS}: sum {i in BUSES} x[i, j] <= 1;
 s.t. Bus_per_slot {i in BUSES}: sum {j in SLOTS} x[i, j] <= 1;
 
-end;
+/* Mostrar la solución */
+solve;
 
+printf "\nAsignaciones:\n";
+for {i in BUSES, j in SLOTS: x[i,j] = 1} {
+    printf "x[%d,%d] = 1\n", i, j;
+}
+
+end;
