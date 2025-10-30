@@ -16,9 +16,10 @@ param Unassigned_cost;
 var x {i in BUSES, j in SLOTS} binary;
 
 /* objective function */
-minimize Cost: sum {i in BUSES} (
-        Assigned_cost * Distance[i] * sum {j in SLOTS} x[i,j]
-      + Unassigned_cost * Passengers[i] * (1 - sum {j in SLOTS} x[i,j]));
+minimize Cost:
+    sum {i in BUSES, j in SLOTS} ((Assigned_cost * Distance[i] - Unassigned_cost * Passengers[i]) * x[i,j])
+    + sum {i in BUSES} (Unassigned_cost * Passengers[i]);
+
 
 /* constraints */
 s.t. Slot_per_bus {j in SLOTS}: sum {i in BUSES} x[i, j] <= 1;
