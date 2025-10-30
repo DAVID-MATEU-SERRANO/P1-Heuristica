@@ -7,8 +7,8 @@ set BUSES; /* {1, ..., m} autobuses */
 set SLOTS; /* {1, ..., n} franjas horarias */
 
 /* parameters */
-param Distance {i in BUSES};
-param Passengers {i in BUSES};
+param Distance {BUSES};
+param Passengers {BUSES};
 param Assigned_cost;
 param Unassigned_cost;
 
@@ -30,7 +30,7 @@ solve;
 
 printf "\nAsignaciones:\n";
 for {i in BUSES, j in SLOTS: x[i,j] = 1} {
-    printf "x[%d,%d] = 1\n", i, j;
+    printf "Bus:%d, Franja:%d\n", i, j;
 }
 
 end;

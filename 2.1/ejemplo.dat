@@ -1,0 +1,23 @@
+set BUSES := 1 2 3 4 5;
+set SLOTS := 1 2 3;
+
+param Assigned_cost := 10.0;
+param Unassigned_cost := 50.0;
+
+param Distance :=
+1 100.0
+2 200.0
+3 150.0
+4 80.0
+5 120.0
+;
+
+param Passengers :=
+1 30
+2 45
+3 20
+4 35
+5 40
+;
+
+end;

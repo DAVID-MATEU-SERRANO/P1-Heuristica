@@ -18,19 +18,30 @@ def parse_input(input_path):
                     lines.append(line.strip())
         
         # Leemos los datos de las líneas
-        n, m = map(int, lines[0].split())
-        kd, kp = map(float, lines[1].split())
-        distances = list(map(float, lines[2].split()))
-        passengers = list(map(int, lines[3].split()))
+        n, m, u = map(int, lines[0].split())
+        shared_passengers = []
+        for i in range(1, m+1):
+            row = list(map(int, lines[i].split()))
+            if len(row) != m:
+                raise ValueError("Datos inconsistentes: debe especificarse los pasajeros compartidos de los %d autobuses" %m)
+            shared_passengers.append(row)
+        available_slots = []
+        for i in range(m+1, m+1+n):
+            row = list(map(int, lines[i].split()))
+            if len(row) != u:
+                raise ValueError("Datos inconsistentes: debe especificarse la disponibilidad de las %d franjas para los %d talleres" %(n,u))
+            available_slots.append(row)
         
         # Comprobamos cantidad de datos leídos
-        if len(distances) != m or len(passengers) != m:
-            raise ValueError("Datos inconsistentes: se esperaban %d autobuses" %m)
+        if len(shared_passengers) != m:
+            raise ValueError("Datos inconsistentes: debe especificarse los pasajeros compartidos de los %d autobuses" %m)
+        if len(available_slots) != n:
+                raise ValueError("Datos inconsistentes: debe especificarse la disponibilidad de las %d franjas para los %d talleres" %(n,u))
         
         # Devolvemos un diccionario con todos los datos
         return {
-            "n": n, "m": m, "kd": kd, "kp": kp,
-            "distances": distances, "passengers": passengers
+            "n": n, "m": m, "u": u,
+            "shared_passengers": shared_passengers, "available_slots": available_slots
         }
     except (FileNotFoundError, ValueError, IndexError) as e:
         print("Error al leer %s: %s" %(input_path, e), file=sys.stderr)
@@ -56,20 +67,27 @@ def generate_dat(data, output_path):
             slots_list = []
             for i in range(1, data["n"] + 1):
                 slots_list.append(str(i))
-            f.write("set SLOTS := %s;\n\n" % " ".join(slots_list))
+            f.write("set SLOTS := %s;\n" % " ".join(slots_list))
             
-            f.write("param Assigned_cost := %s;\n" %data["kd"])
-            f.write("param Unassigned_cost := %s;\n\n" %data["kp"])
+            # Escribimos los talleres
+            workshops_list = []
+            for i in range(1, data["u"] + 1):
+                workshops_list.append(str(i))
+            f.write("set WORKSHOPS := %s;\n\n" % " ".join(workshops_list))
             
-            f.write("param Distance :=\n")
-            for i, dist in enumerate(data["distances"], start=1):
-                f.write("%d %s\n" %(i, dist))
+            # Escribimos la matriz de Shared_passengers
+            f.write("param Shared_passengers :=\n")
+            for i, row in enumerate(data["shared_passengers"], start=1):
+                for j, shared in enumerate(row, start=1):
+                    f.write("[%d, %d] %s\n" %(i, j, shared))
             f.write(";\n\n")
             
-            f.write("param Passengers :=\n")
-            for i, pass_count in enumerate(data["passengers"], start=1):
-                f.write("%d %d\n" %(i, pass_count))
-            f.write(";\n\nend;\n")
+            # Escribimos la matriz de Available_slots
+            f.write("param Available_slots :=\n")
+            for i, row in enumerate(data["available_slots"], start=1):
+                for j, available in enumerate(row, start=1):
+                    f.write("[%d, %d] %s\n" %(i, j, available))
+            f.write(";\n\n")
     
     except IOError as e:
         print("Error al escribir %s: %s" %(output_path, e), file=sys.stderr)
@@ -89,7 +107,6 @@ def solve_glpk(mod_file, data_file):
             ["glpsol", "--model", mod_file, "--data", data_file],
             capture_output=True, text=True # captura stdout y stderr
         )
-        
         if result.returncode != 0:
             print("Error al ejecutar GLPK:", file=sys.stderr)
             print(result.stderr, file=sys.stderr)
@@ -123,14 +140,12 @@ def parse_and_display_solution(output, data):
     
     # Extraer asignaciones
     assignments = {}
-    # Inicializamos a None
-    for i in range(1, data["m"] + 1):
-        assignments[i] = None
     
-    for match in re.finditer(r"Bus:(\d+),\sFranja:(\d+)\n", output):
-        bus = int(match.group(1))
-        slot = int(match.group(2))
-        assignments[bus] = slot
+    for match in re.finditer(r"Franja:(\d+),\sTaller:(\d+), Bus:(\d+)\n", output):
+        slot = int(match.group(1))
+        workshop = int(match.group(2))
+        bus = int(match.group(3))
+        assignments[bus] = (slot, workshop)
     
     # Mostramos la solución
     if obj_val is not None:
@@ -139,24 +154,9 @@ def parse_and_display_solution(output, data):
         print("Variables: %d, Restricciones: %d" %(num_vars, num_const))
     
     # Mostramos asignaciones
-    assigned = []
-    unassigned = []
-    
+    print("Asignaciones:\n")
     for bus in sorted(assignments.keys()):
-        if assignments[bus] is not None:
-            assigned.append((bus, assignments[bus]))
-        else:
-            unassigned.append(bus)
-    
-    if assigned:
-        print("\nAutobuses asignados:")
-        for bus, slot in assigned:
-            print("  Autobús a%d -> Franja s%d" %(bus, slot))
-    
-    if unassigned:
-        print("\nAutobuses sin asignar:")
-        for bus in unassigned:
-            print("  Autobús a%d" %bus)
+        print("Autobús a%d -> Franja s%d, Taller t%d" %(bus, assignments[bus][0], assignments[bus][1]))
 
 
 def main():
@@ -174,7 +174,7 @@ def main():
     generate_dat(data, os.path.abspath(args.output_file))
     
     # Resolver con GLPK
-    output = solve_glpk("parte-2-1.mod", os.path.abspath(args.output_file))
+    output = solve_glpk("parte-2-2.mod", os.path.abspath(args.output_file))
     
     # Mostrar solución
     parse_and_display_solution(output, data)
