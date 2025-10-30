@@ -107,6 +107,7 @@ def solve_glpk(mod_file, data_file):
             ["glpsol", "--model", mod_file, "--data", data_file],
             capture_output=True, text=True # captura stdout y stderr
         )
+        print(result)
         if result.returncode != 0:
             print("Error al ejecutar GLPK:", file=sys.stderr)
             print(result.stderr, file=sys.stderr)
@@ -175,7 +176,7 @@ def main():
     
     # Resolver con GLPK
     output = solve_glpk("parte-2-2.mod", os.path.abspath(args.output_file))
-    
+
     # Mostrar solución
     parse_and_display_solution(output, data)
 
