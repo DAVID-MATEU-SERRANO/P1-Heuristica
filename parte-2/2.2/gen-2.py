@@ -107,7 +107,6 @@ def solve_glpk(mod_file, data_file):
             ["glpsol", "--model", mod_file, "--data", data_file],
             capture_output=True, text=True # captura stdout y stderr
         )
-        print(result)
         if result.returncode != 0:
             print("Error al ejecutar GLPK:", file=sys.stderr)
             print(result.stderr, file=sys.stderr)
@@ -156,6 +155,9 @@ def parse_and_display_solution(output, data):
     
     # Mostramos asignaciones
     print("Asignaciones:\n")
+    # Si se han introducido datos q no permiten q se resuelva el problema
+    if not assignments:
+        print("No hay franjas suficientes para todos los autobuses, no se puede resolver el problema\n")
     for bus in sorted(assignments.keys()):
         print("Autobús a%d -> Franja s%d, Taller t%d" %(bus, assignments[bus][0], assignments[bus][1]))
 

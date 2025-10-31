@@ -2,12 +2,12 @@
 import random
 
 # Parámetros
-n = 3    # franjas
-m = 10    # autobuses
-u = 100    # talleres
+n = 30    # franjas
+m = 100    # autobuses
+u = 30    # talleres
 
 # Nombre del fichero de salida
-output_file = "entrada.in"
+output_file = "ejemplo3.in"
 
 random.seed(42)  # semilla fija para reproducibilidad (puedes quitarla si quieres aleatorio)
 
@@ -19,7 +19,7 @@ with open(output_file, "w") as f:
     shared = [[0 for _ in range(m)] for _ in range(m)]
     for i in range(m):
         for j in range(i + 1, m):
-            val = random.randint(0, 10)
+            val = random.randint(1, 10)
             shared[i][j] = val
             shared[j][i] = val  # simetría
     
